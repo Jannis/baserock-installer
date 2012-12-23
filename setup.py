@@ -46,6 +46,9 @@ setup(
         'baserock-installer/vm' : 'vm',
     },
     package_data = {
+        'baserock-installer': [
+            'data/*',
+        ]
     },
     scripts = [
         'baserock-installer'

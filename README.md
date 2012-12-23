@@ -97,3 +97,6 @@ Copyright (c) 2012 Jannis Pohlmann <jannis.pohlmann@codethink.co.uk>
 
 This software project is licensed under the GNU General Public License
 version 2.0. For more information see the COPYING file.
+
+The copyright of the Baserock logo used in the installer is with
+Codethink Ltd - http://codethink.co.uk.
