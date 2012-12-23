@@ -54,6 +54,7 @@ class Installer(Gtk.Assistant):
                 'page': DownloadReleasesPage(self),
                 'title': 'Download Releases',
                 'type': Gtk.AssistantPageType.CONTENT,
+                'auto-advance': True,
             },
             {
                 'id': 'select-release',
@@ -66,6 +67,7 @@ class Installer(Gtk.Assistant):
                 'page': DownloadReleasePage(self),
                 'title': 'Download Release',
                 'type': Gtk.AssistantPageType.CONTENT,
+                'auto-advance': True,
             },
             {
                 'id': 'finish',
@@ -103,6 +105,8 @@ class Installer(Gtk.Assistant):
         if page.is_complete():
             self.set_page_complete(page, True)
             info['result'] = page.result()
+            if 'auto-advance' in info and info['auto-advance']:
+                self.next_page()
         else:
             self.set_page_complete(page, False)
             info['result'] = None
