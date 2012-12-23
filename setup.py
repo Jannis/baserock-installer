@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -
-# vi: set sw=4 sts=4 ts=4 et:
+# vi:set sw=4 sts=4 ts=4 et nocindent:
 #
 # Copyright (C) 2012 Jannis Pohlmann <jannis.pohlmann@codethink.co.uk>
 #
@@ -48,5 +48,6 @@ setup(
     package_data = {
     },
     scripts = [
+        'baserock-installer'
     ],
 )
