@@ -18,6 +18,7 @@
 
 from gi.repository import Gtk
 
+from ui.pages.downloadreleasepage import DownloadReleasePage
 from ui.pages.downloadreleasespage import DownloadReleasesPage
 from ui.pages.selectreleasepage import SelectReleasePage
 from ui.pages.finishpage import FinishPage
@@ -58,6 +59,12 @@ class Installer(Gtk.Assistant):
                 'id': 'select-release',
                 'page': SelectReleasePage(self),
                 'title': 'Select Release',
+                'type': Gtk.AssistantPageType.CONTENT,
+            },
+            {
+                'id': 'download-release',
+                'page': DownloadReleasePage(self),
+                'title': 'Download Release',
                 'type': Gtk.AssistantPageType.CONTENT,
             },
             {

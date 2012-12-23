@@ -26,3 +26,6 @@ class Release(object):
                 data['name'],
                 data['kind'][:1].upper() + data['kind'][1:],
                 data['arch'])
+
+    def files(self):
+        return [self.data['image']] + self.data.get('fillers', [])

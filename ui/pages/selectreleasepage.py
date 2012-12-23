@@ -54,13 +54,13 @@ class SelectReleasePage(Page):
 
     def prepare(self, results):
         self.model.clear()
-        releases = results['download-releases']
+        releases = results['download-releases']['releases']
         for release in releases:
             self.model.append([release.title, release])
         self.combo.set_active(0)
 
     def is_complete(self):
-        return True
+        return self.combo.get_active_iter() is not None
 
     def result(self):
         title, release = self.model.get(self.combo.get_active_iter(), 0, 1)

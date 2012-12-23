@@ -37,9 +37,9 @@ class DownloadReleasesPage(Page):
     def __init__(self, assistant):
         Page.__init__(self, assistant)
 
-        config_dir = GLib.get_user_config_dir()
+        configdir = GLib.get_user_config_dir()
         self.repositories = os.path.join(
-                config_dir, 'baserock-installer', 'repos')
+                configdir, 'baserock-installer', 'repos')
 
         label, box = self.start_section('Downloading Releases')
 
@@ -149,4 +149,7 @@ class DownloadReleasesPage(Page):
         return self.download_succeeded and self.releases
 
     def result(self):
-        return self.releases
+        return {
+            'repodir': self.repodir,
+            'releases': self.releases
+        }
