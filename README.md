@@ -71,7 +71,10 @@ The following wizard pages seem reasonable at this point:
 8. Connect Trove (parameters: Trove hostname, name, email, public SSH
    key, optionally ask to create Trove account)
 9. Trove Connection (automatic)
-10. Completion
+10. Configure Network (parameters: static IP etc.)
+11. Configure Deployment (parameters: depends on morph's deployment
+    plugin)
+12. Completion
 
 ### Caching / VM management
 

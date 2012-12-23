@@ -30,11 +30,11 @@ class WelcomePage(Page):
 
         self.repository = None
 
-        label, box = self.start_section('Welcome to the Baserock installer!')
+        label, box = self.start_section('Welcome to the Baserock installer')
         text = self.create_text(
                 'This wizard will guide you through the installation of '
                 'Baserock. You will be able to select a Baserock release '
-                'and will be helped to set up your development or runtime '
+                'and will be helped in setting up your development or runtime '
                 'environment step by step.\n'
                 '\n'
                 'If you encounter any problems during the installation or '
