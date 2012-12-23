@@ -47,8 +47,10 @@ class Header(Gtk.Frame):
 
 class Page(Gtk.VBox):
 
-    def __init__(self):
+    def __init__(self, assistant):
         Gtk.VBox.__init__(self)
+
+        self.assistant = assistant
         
         header = Header()
         header.show()
@@ -92,3 +94,15 @@ class Page(Gtk.VBox):
         label.set_markup(text)
         label.show()
         return label
+
+    def is_complete(self):
+        return True
+
+    def result(self):
+        return None
+
+    def prepare(self, results):
+        pass
+
+    def notify_complete(self):
+        self.assistant.child_notify(self, 'complete')

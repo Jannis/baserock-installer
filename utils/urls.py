@@ -1,7 +1,6 @@
-#!/usr/bin/env python
-# -
 # vi:set sw=4 sts=4 ts=4 et nocindent:
 #
+# Copyright (C) 2012 Codethink Limited
 # Copyright (C) 2012 Jannis Pohlmann <jannis.pohlmann@codethink.co.uk>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -18,17 +17,11 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-import os
-import sys
+import string
 
 
-if __name__ == '__main__':
-    sys.path += map(lambda x: os.path.join(x, 'baserock-installer'), sys.path)
-
-    from gi.repository import Gdk, GObject
-    GObject.threads_init()
-    Gdk.threads_init()
-
-    from ui.installer import Installer
-    installer = Installer()
-    installer.run()
+def quote_url(url):
+    ''' Convert URIs to strings that only contain digits, letters, % and _. '''
+    valid_chars = string.digits + string.letters + '%_'
+    transl = lambda x: x if x in valid_chars else '_'
+    return ''.join([transl(x) for x in url])

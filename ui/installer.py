@@ -18,8 +18,10 @@
 
 from gi.repository import Gtk
 
-from ui.pages.welcomepage import WelcomePage
+from ui.pages.downloadreleasespage import DownloadReleasesPage
+from ui.pages.selectreleasepage import SelectReleasePage
 from ui.pages.finishpage import FinishPage
+from ui.pages.welcomepage import WelcomePage
 
 
 class Installer(Gtk.Assistant):
@@ -33,6 +35,7 @@ class Installer(Gtk.Assistant):
         self.connect('cancel', self.cancel)
         self.connect('delete-event', self.cancel)
         self.connect('close', self.close)
+        self.connect('prepare', self.prepare)
 
         self.create_pages()
 
@@ -40,14 +43,26 @@ class Installer(Gtk.Assistant):
         self.pages = [
             {
                 'id': 'welcome',
-                'page': WelcomePage(),
+                'page': WelcomePage(self),
                 'title': 'Welcome',
                 'type': Gtk.AssistantPageType.INTRO,
-                'complete': True,
+                'complete': False,
+            },
+            {
+                'id': 'download-releases',
+                'page': DownloadReleasesPage(self),
+                'title': 'Download Releases',
+                'type': Gtk.AssistantPageType.CONTENT,
+            },
+            {
+                'id': 'select-release',
+                'page': SelectReleasePage(self),
+                'title': 'Select Release',
+                'type': Gtk.AssistantPageType.CONTENT,
             },
             {
                 'id': 'finish',
-                'page': FinishPage(),
+                'page': FinishPage(self),
                 'title': 'Complete',
                 'type': Gtk.AssistantPageType.SUMMARY,
                 'complete': True,
@@ -55,14 +70,38 @@ class Installer(Gtk.Assistant):
         ]
 
         for page in self.pages:
+            page['page'].connect('child-notify::complete', self.page_complete)
             page['page'].show()
             self.append_page(page['page'])
             self.set_page_type(page['page'], page['type'])
-            self.set_page_title(page['page'], page['title'])
+            self.set_page_title(
+                    page['page'],
+                    '%i. %s' % (self.pages.index(page) + 1, page['title']))
             if 'complete' in page and page['complete']:
                 self.set_page_complete(page['page'], True)
 
         self.set_current_page(0)
+
+    def page_info(self, page):
+        return [x for x in self.pages if x['page'] is page][0]
+
+    def results(self):
+        results = {}
+        for info in self.pages:
+            results[info['id']] = info['result'] if 'result' in info else None
+        return results
+
+    def page_complete(self, page, pspec):
+        info = self.page_info(page)
+        if page.is_complete():
+            self.set_page_complete(page, True)
+            info['result'] = page.result()
+        else:
+            self.set_page_complete(page, False)
+            info['result'] = None
+
+    def prepare(self, installer, page):
+        page.prepare(self.results())
     
     def cancel(self, *args):
         self.quit()

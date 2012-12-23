@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -
 # vi:set sw=4 sts=4 ts=4 et nocindent:
 #
 # Copyright (C) 2012 Jannis Pohlmann <jannis.pohlmann@codethink.co.uk>
@@ -18,17 +16,13 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-import os
-import sys
+class Release(object):
 
-
-if __name__ == '__main__':
-    sys.path += map(lambda x: os.path.join(x, 'baserock-installer'), sys.path)
-
-    from gi.repository import Gdk, GObject
-    GObject.threads_init()
-    Gdk.threads_init()
-
-    from ui.installer import Installer
-    installer = Installer()
-    installer.run()
+    def __init__(self, filename, data):
+        self.filename = filename
+        self.data = data
+        self.name = data['name']
+        self.title = '%s (%s) [%s]' % (
+                data['name'],
+                data['kind'][:1].upper() + data['kind'][1:],
+                data['arch'])

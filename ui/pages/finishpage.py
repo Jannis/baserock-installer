@@ -25,8 +25,8 @@ from ui.pages.page import Page
 
 class FinishPage(Page):
 
-    def __init__(self):
-        Page.__init__(self)
+    def __init__(self, assistant):
+        Page.__init__(self, assistant)
 
         label, box = self.start_section('Thanks for installing Baserock!')
         text = self.create_text(
@@ -42,10 +42,14 @@ class FinishPage(Page):
                 'button below.')
         box.pack_start(text, False, True, 0)
 
-        button = Gtk.Button()
+        self.start_button = Gtk.Button()
         image = Gtk.Image.new_from_stock(
                 Gtk.STOCK_EXECUTE, Gtk.IconSize.BUTTON)
-        button.set_image(image)
-        button.set_label('Start Baserock')
-        button.show()
-        box.pack_start(button, False, False, 0)
+        self.start_button.set_image(image)
+        self.start_button.set_label('Start Baserock')
+        self.start_button.show()
+        box.pack_start(self.start_button, False, False, 0)
+
+    def prepare(self, results):
+        release = results['select-release']
+        self.start_button.set_label('Start %s' % release.title)

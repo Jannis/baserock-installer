@@ -25,8 +25,10 @@ from ui.pages.page import Page
 
 class WelcomePage(Page):
 
-    def __init__(self):
-        Page.__init__(self)
+    def __init__(self, assistant):
+        Page.__init__(self, assistant)
+
+        self.repository = None
 
         label, box = self.start_section('Welcome to the Baserock installer!')
         text = self.create_text(
@@ -59,6 +61,20 @@ class WelcomePage(Page):
         hbox.pack_start(label, False, True, 0)
 
         entry = Gtk.Entry()
-        entry.set_placeholder_text('git://trove.baserock.org/baserock/baserock/releases.git')
+        entry.set_activates_default(True)
+        entry.connect('changed', self.repository_changed)
+        entry.connect('activate', self.repository_changed)
+        entry.set_placeholder_text(
+                'git://trove.baserock.org/baserock/baserock/releases.git')
         entry.show()
         hbox.add(entry)
+
+    def repository_changed(self, entry):
+        self.repository = entry.get_text()
+        self.notify_complete()
+
+    def is_complete(self):
+        return self.repository and len(self.repository) > 0
+
+    def result(self):
+        return self.repository
