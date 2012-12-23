@@ -106,3 +106,6 @@ class Page(Gtk.VBox):
 
     def notify_complete(self):
         self.assistant.child_notify(self, 'complete')
+
+    def cancel(self):
+        pass

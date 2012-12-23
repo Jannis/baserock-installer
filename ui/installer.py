@@ -111,6 +111,10 @@ class Installer(Gtk.Assistant):
         page.prepare(self.results())
     
     def cancel(self, *args):
+        index = self.get_current_page()
+        page = self.get_nth_page(index)
+        if page:
+            page.cancel()
         self.quit()
 
     def close(self, *args):

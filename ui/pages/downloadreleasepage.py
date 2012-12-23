@@ -100,7 +100,8 @@ class DownloadReleasePage(Page):
             self.total_progress.set_text('Total')
 
         if self.item_bytes != 0:
-            item_fraction = float(self.item_bytes_read) / float(self.item_bytes)
+            item_fraction = \
+                    float(self.item_bytes_read) / float(self.item_bytes)
             item_percent = item_fraction * 100
 
             item_text = \
@@ -148,3 +149,7 @@ class DownloadReleasePage(Page):
 
     def result(self):
         return None
+
+    def cancel(self):
+        if self.worker:
+            self.downloader.terminate()
