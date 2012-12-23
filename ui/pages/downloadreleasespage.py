@@ -63,9 +63,10 @@ class DownloadReleasesPage(Page):
 
     def set_error(self, text):
         self.download_succeeded = False
-        self.progress_label.set_text('Failed!')
         self.error_label.set_markup('<b>Error: %s</b>' % text)
         self.error_label.show()
+        self.spinner.stop()
+        self.spinner.hide()
 
     def prepare(self, results):
         self.progress.foreach(lambda x, _: self.progress.remove(x), None)
