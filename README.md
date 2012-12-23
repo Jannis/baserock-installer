@@ -94,6 +94,12 @@ VirtualBox, libvirt, plain QEMU and others.
 Open question: What does the installer need to know in order to support
 different architectures? Is it possible in to achieve this in general?
 
+### Checksums
+
+Releases defined in the repository should come with SHA256 sums or
+at least SHA1 sums for all files that need downloading. This helps
+ensuring that no corrupted files end up on the user's computer.
+
 ## Copyright and License
 
 Copyright (c) 2012 Jannis Pohlmann <jannis.pohlmann@codethink.co.uk>
