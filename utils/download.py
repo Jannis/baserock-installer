@@ -109,7 +109,7 @@ class FileDownload(GObject.GObject):
         ''' Abort download. '''
         self.terminated = True
 
-    def isTerminated(self):
+    def is_terminated(self):
         ''' Determine whether the downloader was terminated or not. '''
         return self.terminated
 

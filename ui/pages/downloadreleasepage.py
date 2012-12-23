@@ -29,6 +29,7 @@ from gi.repository import Gdk, GLib, Gtk
 import utils.urls
 
 from ui.pages.page import Page
+from utils import gdk
 from utils.release import Release
 from utils.download import DownloadItem, FileDownload
 
@@ -41,6 +42,8 @@ class DownloadReleasePage(Page):
         config_dir = GLib.get_user_config_dir()
         self.repositories = os.path.join(
                 config_dir, 'baserock-installer', 'repos')
+
+        self.worker = None
 
         self.title, box = self.start_section('Downloading Release')
 
@@ -64,22 +67,19 @@ class DownloadReleasePage(Page):
         print 'Downloading %s failed' % handle
 
     def download_progress(self, downloader, handle):
-        Gdk.threads_enter()
-        try:
+        with gdk.lock:
             self.total_bytes = downloader.total_bytes
             self.total_bytes_read = downloader.total_bytes_read
             self.item_bytes = handle.info.size
             self.item_bytes_read = handle.bytes_read
             self.item_name = handle.item.name
             self.update_progress_bars()
-        finally:
-            Gdk.threads_leave()
 
     def download_finished(self, downloader):
         self.notify_completed()
 
     def update_progress_bars(self):
-        if self.downloader.terminated:
+        if self.downloader.is_terminated():
             return
 
         if self.total_bytes != 0:
@@ -117,16 +117,22 @@ class DownloadReleasePage(Page):
         else:
             self.item_progress.set_text(self.item_name)
 
-    def prepare(self, results):
-        release = results['select-release']
-        self.title.set_markup('<span size="large">Downloading %s</span>' %
-                              release.title)
-
+    def reset(self):
         self.total_bytes = 0
         self.total_bytes_read = 0
         self.item_bytes = 0
         self.item_bytes_read = 0
         self.item_name = ''
+
+        self.item_progress.set_text('')
+        self.total_progress.set_text('')
+
+    def prepare(self, results):
+        self.cancel()
+
+        release = results['select-release']
+        self.title.set_markup('<span size="large">Downloading %s</span>' %
+                              release.title)
 
         configdir = GLib.get_user_config_dir()
         self.dirname = os.path.join(
@@ -151,5 +157,7 @@ class DownloadReleasePage(Page):
         return None
 
     def cancel(self):
+        self.reset()
         if self.worker:
             self.downloader.terminate()
+            self.worker.join()

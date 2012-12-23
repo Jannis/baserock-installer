@@ -29,6 +29,7 @@ from gi.repository import Gdk, GLib, Gtk
 import utils.urls
 
 from ui.pages.page import Page
+from utils import gdk
 from utils.release import Release
 
 
@@ -46,31 +47,25 @@ class DownloadReleasesPage(Page):
         self.download_text = self.create_text('')
         box.pack_start(self.download_text, False, False, 0)
 
-        self.progress = Gtk.VBox(False, 6)
+        self.progress = Gtk.ProgressBar()
+        self.progress.set_show_text(True)
         self.progress.show()
         box.pack_start(self.progress, False, False, 0)
-
-        self.spinner = Gtk.Spinner()
-        self.spinner.show()
-        box.pack_start(self.spinner, False, False, 0)
         
         self.error_label = self.create_text('')
+        self.error_label.set_selectable(True)
         box.pack_start(self.error_label, False, False, 0)
-
-    def add_progress(self, text):
-        label = self.create_text(text)
-        self.progress.pack_start(label, False, False, 0)
 
     def set_error(self, text):
         self.download_succeeded = False
+        self.progress.set_text('Failed')
         self.error_label.set_markup('<b>Error: %s</b>' % text)
         self.error_label.show()
-        self.spinner.stop()
-        self.spinner.hide()
 
     def prepare(self, results):
-        self.progress.foreach(lambda x, _: self.progress.remove(x), None)
-        self.add_progress('Cloning...')
+        self.cancel()
+
+        self.progress.set_text('')
         self.error_label.hide()
         self.releases = []
         self.download_succeeded = False
@@ -90,35 +85,40 @@ class DownloadReleasesPage(Page):
 
         self.worker = threading.Thread(target = self.clone_repository)
         self.worker.start()
-        self.spinner.start()
 
     def clone_repository(self):
         try:
             if os.path.isdir(self.repodir):
+                with gdk.lock:
+                    self.progress.set_text('Pulling %s...' %
+                                           os.path.basename(self.repository))
                 subprocess.check_output(['git', 'remote', 'set-url', 'origin',
                                          self.repository], cwd=self.repodir,
                                         stderr=subprocess.STDOUT)
+                with gdk.lock:
+                    self.progress.set_fraction(1/3.0)
                 subprocess.check_output(['git', 'pull', '--rebase', 'origin'],
                                         cwd=self.repodir,
                                         stderr=subprocess.STDOUT)
+                with gdk.lock:
+                    self.progress.set_fraction(2/3.0)
             else:
+                with gdk.lock:
+                    self.progress.set_text('Cloning %s...' %
+                                           os.path.basename(self.repository))
                 subprocess.check_output(['git', 'clone', self.repository,
                                         self.repodir],
                                         stderr=subprocess.STDOUT)
+                with gdk.lock:
+                    self.progress.set_fraction(2/3.0)
             self.download_succeeded = True
         except subprocess.CalledProcessError, err:
-            Gdk.threads_enter()
-            try:
+            with gdk.lock:
                 self.set_error(err.output)
-            finally:
-                Gdk.threads_leave()
             return
 
-        Gdk.threads_enter()
-        try:
-            self.add_progress('Parsing...')
-        finally:
-            Gdk.threads_leave()
+        with gdk.lock:
+            self.progress.set_text('Loading releases...')
 
         try:
             # Parse the releases found in the repository
@@ -132,19 +132,15 @@ class DownloadReleasesPage(Page):
                         release = Release(filename, data)
                         self.releases.append(release)
         except Exception, err:
-            Gdk.threads_enter()
-            try:
+            with gdk.lock:
                 self.set_error('%s' % err)
-            finally:
-                Gdk.threads_leave()
+                self.progress.set_fraction(0.0)
+                return
 
-        Gdk.threads_enter()
-        try:
-            self.spinner.stop()
-            self.spinner.hide()
+        with gdk.lock:
+            self.progress.set_text('Finished')
+            self.progress.set_fraction(1.0)
             self.notify_complete()
-        finally:
-            Gdk.threads_leave()
 
     def is_complete(self):
         return self.download_succeeded and self.releases
