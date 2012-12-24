@@ -72,7 +72,7 @@ class Installer(Gtk.Assistant):
             {
                 'id': 'finish',
                 'page': FinishPage(self),
-                'title': 'Complete',
+                'title': 'Summary',
                 'type': Gtk.AssistantPageType.SUMMARY,
                 'complete': True,
             }
@@ -105,8 +105,8 @@ class Installer(Gtk.Assistant):
         if page.is_complete():
             self.set_page_complete(page, True)
             info['result'] = page.result()
-            if 'auto-advance' in info and info['auto-advance']:
-                self.next_page()
+            #if 'auto-advance' in info and info['auto-advance']:
+            #    self.next_page()
         else:
             self.set_page_complete(page, False)
             info['result'] = None

@@ -64,7 +64,7 @@ class FileDownload(GObject.GObject):
 
     ''' Download manager with cancellation and download queue capabilities. '''
 
-    BLOCK_SIZE = 2048
+    BLOCK_SIZE = 8192
 
     __gsignals__ = {
         'download-item-started': (
