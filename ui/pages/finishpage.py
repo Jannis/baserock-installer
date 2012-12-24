@@ -53,3 +53,11 @@ class FinishPage(Page):
     def prepare(self, results):
         release = results['select-release']
         self.start_button.set_label('Start %s' % release.title)
+        self.start_button.connect(
+                'clicked', lambda btn: self.start_vm(results['configure-vm']))
+
+    def start_vm(self, info):
+        virt = info['virtualization']
+        vm = info['vm-name']
+
+        virt.start(vm)

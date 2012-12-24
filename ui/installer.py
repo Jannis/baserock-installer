@@ -18,6 +18,8 @@
 
 from gi.repository import Gtk
 
+from ui.pages.configurevmpage import ConfigureVMPage
+from ui.pages.createvmpage import CreateVMPage
 from ui.pages.downloadreleasepage import DownloadReleasePage
 from ui.pages.downloadreleasespage import DownloadReleasesPage
 from ui.pages.selectreleasepage import SelectReleasePage
@@ -67,6 +69,19 @@ class Installer(Gtk.Assistant):
                 'page': DownloadReleasePage(self),
                 'title': 'Download Release',
                 'type': Gtk.AssistantPageType.CONTENT,
+                'auto-advance': True,
+            },
+            {
+                'id': 'configure-vm',
+                'page': ConfigureVMPage(self),
+                'title': 'Configure Virtual Machine',
+                'type': Gtk.AssistantPageType.CONTENT,
+            },
+            {
+                'id': 'create-vm',
+                'page': CreateVMPage(self),
+                'title': 'Create Virtual Machine',
+                'type': Gtk.AssistantPageType.PROGRESS,
                 'auto-advance': True,
             },
             {
