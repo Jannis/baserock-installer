@@ -16,203 +16,159 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-from gi.repository import GObject
+import collections
+import threading
+
+from gi.repository import Gio, GLib, GObject
 
 
-import os
-import socket
-import httplib
-import urllib
-import urlparse
-import tempfile
-import shutil
-import time
-from threading import Thread
-
-
-class DownloadItem(object):
+class DownloadItem(GObject.GObject):
 
     ''' Wraps information about a file being downloaded. '''
 
-    def __init__(self, name, source, target):
-        self.name = name
+    def __init__(self, source, target):
+        GObject.GObject.__init__(self)
         self.source = source
         self.target = target
+        self.source_file = None
+        self.target_file = None
+        self.source_info = None
+        self.target_info = None
 
 
-class URLInfo(object):
-
-    ''' Wrapper class for handle information. '''
-
-    def __init__(self, handle_info):
-        self.size = int(handle_info['Content-Length'])
-
-
-class DownloadHandle(GObject.GObject):
-
-    ''' Handle object for file downloads. '''
-
-    def __init__(self, item, handle):
-        GObject.GObject.__init__(self)
-        self.item = item
-        self.handle = handle
-        self.info = URLInfo(handle.info())
-        self.bytes_read = 0
-
-
-class FileDownload(GObject.GObject):
+class Downloader(GObject.GObject):
 
     ''' Download manager with cancellation and download queue capabilities. '''
 
-    BLOCK_SIZE = 2048
+    BLOCK_SIZE = 4096 * 4
 
     __gsignals__ = {
         'download-item-started': (
             GObject.SIGNAL_RUN_LAST,
             GObject.TYPE_BOOLEAN,
-            (DownloadHandle, )
+            (DownloadItem, )
         ),
         'download-item-finished': (
             GObject.SIGNAL_RUN_LAST,
             GObject.TYPE_BOOLEAN,
-            (DownloadHandle, )
+            (DownloadItem, )
         ),
         'download-error': (
             GObject.SIGNAL_RUN_LAST,
             GObject.TYPE_BOOLEAN,
-            (DownloadHandle, )
+            (DownloadItem, )
         ),
         'download-progress': (
             GObject.SIGNAL_RUN_LAST,
             GObject.TYPE_BOOLEAN,
-            (DownloadHandle, )
+            (DownloadItem, )
         ),
         'download-finished': (
             GObject.SIGNAL_RUN_LAST,
-            GObject.TYPE_BOOLEAN,
+            GObject.TYPE_NONE,
             ()
         ),
     }
 
     def __init__(self):
         GObject.GObject.__init__(self)
-        self.excluded_mime_types = set()
-        self._reset()
-    
-    def _reset(self):
-        self.total_bytes = 0
-        self.total_bytes_read = 0
-        self.queue = list()
-        self.terminated = False
+        self.cancellable = Gio.Cancellable()
+        self.worker = None
 
-    def terminate(self):
-        ''' Abort download. '''
-        self.terminated = True
-
-    def is_terminated(self):
-        ''' Determine whether the downloader was terminated or not. '''
-        return self.terminated
-
-    def _is_valid_header(self, data):
-        if self.excluded_mime_types:
-            for type in self.excluded_mime_types:
-                if data.gettype() == type:
-                    return False
-        return True
+    def cancel(self):
+        print 'cancel cancellable'
+        self.cancellable.cancel()
+        if self.worker:
+            self.worker.join()
+            self.worker = None
+        print 'cancellable cancelled'
 
     def download(self, items):
-        ''' Download items in the passed item list.
-        
-        Other classes can hook into the download process by connecting
-        to the various status signals listed at the bottom of this file.
-        
-        '''
-        # Reset certain variables
-        self._reset()
+        self.cancellable.reset()
+        self.queue = collections.deque(items)
+        if self.queue:
+            self.step1_obtain_file_infos()
 
-        self.items = items
+    def step1_obtain_file_infos(self):
+        items = list(self.queue)
 
-        # Spawn worker thread
-        worker = Thread(target = self._process)
-        worker.start()
-
-        # Return thread object
-        return worker
-        
-    def _process(self):
-        # Use FancyURLopener for accessing URLs
-        opener = urllib.FancyURLopener()
-
-        # Open URL handles and build download queue
-        for item in self.items:
-            # Open URL
-            handle = opener.open(item.source)
-
-            # Create download handle
-            dl_handle = DownloadHandle(item, handle)
-            
-            # Check header (exclude mime-types)
-            if not self._is_valid_header(handle.info()):
-                self.emit('download-error', dl_handle)
-                return
-                
-            # Append handle to queue
-            self.queue.append(dl_handle)
-
-        # Determine total bytes to retrieve
-        for dl_handle in self.queue:
-            self.total_bytes += dl_handle.info.size
-
-        # Download items
-        for dl_handle in self.queue:
-            # Emit 'download-started' signal
-            self.emit('download-item-started', dl_handle)
-
-            # Create temporary file for writing the data to
-            tmpfile_fd, tmpfile_path = tempfile.mkstemp(
-                    '-download', 'baserock-',
-                    dir=os.path.dirname(dl_handle.item.target))
-
-            # Read data from the URL handle
-            buf = dl_handle.handle.read(self.BLOCK_SIZE)
-            while buf:
-                # Abort download, if requested
-                if self.terminated:
-                    dl_handle.handle.close()
-                    os.close(tmpfile_fd)
-                    os.remove(tmpfile_path)
-                    return
-                
-                # Write data to temp file
-                os.write(tmpfile_fd, buf)
-
-                # Keep track of the already retrieved bytes
-                dl_handle.bytes_read += len(buf)
-                self.total_bytes_read += len(buf)
-
-                # Emit 'download-progress' signal
-                self.emit('download-progress', dl_handle)
-
-                # Read next block
-                buf = dl_handle.handle.read(self.BLOCK_SIZE)
-
-            # Close temporary file
-            os.close(tmpfile_fd)
-
-            # Move temporary file to destination
-            shutil.move(tmpfile_path, dl_handle.item.target)
-
-            # Remove temporary file if it still exists
+        def target_info_ready(target_file, result, item):
+            print 'target info ready: %s' % item.target
             try:
-                os.remove(tmpfile_path)
-            except:
+                item.target_info = target_file.query_info_finish(result)
+            except GLib.GError:
                 pass
+            if items:
+                obtain_source_info(items.pop(0))
+            else:
+                self.step2_download_files()
 
-            # Close download file handle
-            dl_handle.handle.close()
+        def obtain_target_info(item):
+            print 'obtain target info: %s' % item.target
+            item.target_file = Gio.File.new_for_commandline_arg(item.target)
+            item.target_file.query_info_async(
+                    '*', 0, GLib.PRIORITY_DEFAULT, self.cancellable,
+                    target_info_ready, item)
 
-            # Emit 'download-item-finished' signal
-            self.emit('download-item-finished', dl_handle)
+        def source_info_ready(source_file, result, item):
+            print 'source info read: %s' % item.source
+            item.source_info = source_file.query_info_finish(result)
+            obtain_target_info(item)
 
-        # Emit 'download-finished' signal
-        self.emit('download-finished')
+        def obtain_source_info(item):
+            print 'obtain source info: %s' % item.source
+            item.source_file = Gio.File.new_for_commandline_arg(item.source)
+            item.source_file.query_info_async(
+                    '*', 0, GLib.PRIORITY_DEFAULT, self.cancellable,
+                    source_info_ready, item)
+
+        obtain_source_info(items.pop(0))
+
+    def step2_download_files(self):
+        items = list(self.queue)
+
+        self.item_bytes = 0
+        self.item_bytes_read = 0
+        self.total_bytes = 0
+        self.total_bytes = sum([x.source_info.get_size() for x in items])
+        self.total_bytes_read = 0
+
+        def download_progress(item_bytes_read, item_bytes, item):
+            print 'download progress: %d' % item_bytes_read
+            self.item_bytes_read = item_bytes_read
+            self.item_bytes = item_bytes
+            self.emit('download-progress', item)
+
+        def download_item(item):
+            try:
+                item.source_file.copy(
+                        item.target_file,
+                        Gio.FileCopyFlags.OVERWRITE,
+                        self.cancellable,
+                        download_progress,
+                        item)
+                print 'copied'
+                import sys
+                sys.stdout.flush()
+            except Exception, err:
+                print 'error: %s' % err
+                import sys
+                sys.stdout.flush()
+                self.emit('download-error', item)
+                return
+            if items:
+                print 'next'
+                import sys
+                sys.stdout.flush()
+                download_next(items.pop(0))
+            else:
+                print 'finished'
+                import sys
+                sys.stdout.flush()
+                self.emit('download-finished')
+
+        def download_next(item):
+            self.worker = threading.Thread(target=download_item, args=[item])
+            self.worker.start()
+
+        download_next(items.pop(0))

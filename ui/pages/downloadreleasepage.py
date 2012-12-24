@@ -18,20 +18,21 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+import collections
 import glob
 import os
 import subprocess
 import threading
 import yaml
 
-from gi.repository import Gdk, GLib, Gtk
+from gi.repository import Gdk, Gio, GLib, Gtk
 
 import utils.urls
 
 from ui.pages.page import Page
 from utils import gdk
 from utils.release import Release
-from utils.download import DownloadItem, FileDownload
+from utils.download import DownloadItem, Downloader
 
 
 class DownloadReleasePage(Page):
@@ -43,92 +44,87 @@ class DownloadReleasePage(Page):
         self.repositories = os.path.join(
                 config_dir, 'baserock-installer', 'repos')
 
-        self.worker = None
+        self.downloader = Downloader()
+        self.downloader.connect('download-progress', self.download_progress)
+        self.downloader.connect('download-finished', self.download_finished)
 
         self.title, box = self.start_section('Downloading Release')
 
+        grid = Gtk.Grid()
+        grid.set_row_spacing(6)
+        grid.set_column_spacing(12)
+        grid.show()
+        self.add(grid)
+
+        label = Gtk.Label('Current File:')
+        label.set_halign(Gtk.Align.START)
+        label.set_valign(Gtk.Align.CENTER)
+        label.show()
+        grid.attach(label, 0, 0, 1, 1)
+
         self.item_progress = Gtk.ProgressBar()
+        self.item_progress.set_hexpand(True)
         self.item_progress.set_show_text(True)
         self.item_progress.show()
-        box.pack_start(self.item_progress, False, False, 0)
+        grid.attach(self.item_progress, 1, 0, 1, 1)
+
+        label = Gtk.Label('Total:')
+        label.set_halign(Gtk.Align.START)
+        label.set_valign(Gtk.Align.CENTER)
+        label.show()
+        grid.attach(label, 0, 1, 1, 1)
 
         self.total_progress = Gtk.ProgressBar()
+        self.total_progress.set_hexpand(True)
         self.total_progress.set_show_text(True)
         self.total_progress.show()
-        box.pack_start(self.total_progress, False, False, 0)
+        grid.attach(self.total_progress, 1, 1, 1, 1)
 
-        self.downloader = FileDownload()
-        self.downloader.connect('download-error', self.download_error)
-        self.downloader.connect('download-progress', self.download_progress)
-        self.downloader.connect('download-finished', self.download_finished)
-        self.downloader.excluded_mime_types.add('text/html')
-
-    def download_error(self, downloader, handle):
-        print 'Downloading %s failed' % handle
-
-    def download_progress(self, downloader, handle):
-        with gdk.lock:
-            self.total_bytes = downloader.total_bytes
-            self.total_bytes_read = downloader.total_bytes_read
-            self.item_bytes = handle.info.size
-            self.item_bytes_read = handle.bytes_read
-            self.item_name = handle.item.name
-            self.update_progress_bars()
+    def download_progress(self, downloader, item):
+        self.total_bytes = downloader.total_bytes
+        self.total_bytes_read = downloader.total_bytes_read
+        self.item_bytes = downloader.item_bytes
+        self.item_bytes_read = downloader.item_bytes_read
+        self.update_progress_bars()
 
     def download_finished(self, downloader):
-        self.notify_completed()
+        self.notify_complete()
 
     def update_progress_bars(self):
-        if self.downloader.is_terminated():
-            return
-
-        if self.total_bytes != 0:
-            total_fraction = \
-                    float(self.total_bytes_read) / float(self.total_bytes)
-            total_percent = total_fraction * 100
-            
-            total_text = \
-                    'Total: %(percent)d%% (%(bytes).1f/%(total).1f MB)' % {
-                'percent': total_percent,
-                'bytes': self.total_bytes_read / 1000 / 1000.0, 
-                'total': self.total_bytes / 1000 / 1000.0
-            }
-
-            self.total_progress.set_fraction(total_fraction)
-            self.total_progress.set_text(total_text)
-        else:
-            self.total_progress.set_text('Total')
-
         if self.item_bytes != 0:
-            item_fraction = \
-                    float(self.item_bytes_read) / float(self.item_bytes)
-            item_percent = item_fraction * 100
+            item_fraction = self.item_bytes_read / float(self.item_bytes)
+            self.item_progress.set_fraction(item_fraction)
 
-            item_text = \
-                    '%(name)s: %(percent)d%% (%(bytes).1f/%(total).1f MB)' % {
-                'name': self.item_name, 
-                'percent': item_percent,
+            item_text = '%(bytes).1f of %(total).1f MB' % {
                 'bytes': self.item_bytes_read / 1000 / 1000.0,
                 'total': self.item_bytes / 1000 / 1000.0
             }
-
-            self.item_progress.set_fraction(item_fraction)
             self.item_progress.set_text(item_text)
         else:
-            self.item_progress.set_text(self.item_name)
+            self.item_progress.set_text('')
+
+        if self.total_bytes != 0:
+            total_fraction = self.total_bytes_read / float(self.total_bytes)
+            self.total_progress.set_fraction(total_fraction)
+            
+            total_text = '%(bytes).1f of %(total).1f MB)' % {
+                'bytes': self.total_bytes_read / 1000 / 1000.0, 
+                'total': self.total_bytes / 1000 / 1000.0
+            }
+            self.total_progress.set_text(total_text)
+        else:
+            self.total_progress.set_text('')
 
     def reset(self):
         self.total_bytes = 0
         self.total_bytes_read = 0
         self.item_bytes = 0
         self.item_bytes_read = 0
-        self.item_name = ''
-
         self.item_progress.set_text('')
         self.total_progress.set_text('')
 
     def prepare(self, results):
-        self.cancel()
+        #self.cancel()
 
         release = results['select-release']
         self.title.set_markup('<span size="large">Downloading %s</span>' %
@@ -142,22 +138,18 @@ class DownloadReleasePage(Page):
         if not os.path.isdir(self.dirname):
             os.makedirs(self.dirname)
 
-        download_items = set()
+        self.download_items = []
         for url in release.files():
-            basename = os.path.basename(url)
-            destination = os.path.join(self.dirname, basename)
-            download_items.add(DownloadItem(basename, url, destination))
+            target = os.path.join(self.dirname, os.path.basename(url))
+            self.download_items.append(DownloadItem(url, target))
 
-        self.worker = self.downloader.download(download_items)
-
+        self.downloader.download(self.download_items)
+    
     def is_complete(self):
         return False
 
     def result(self):
-        return None
+        return self.download_items
 
     def cancel(self):
-        self.reset()
-        if self.worker:
-            self.downloader.terminate()
-            self.worker.join()
+        self.downloader.cancel()

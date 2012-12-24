@@ -22,7 +22,7 @@ class Release(object):
         self.filename = filename
         self.data = data
         self.name = data['name']
-        self.title = '%s (%s) [%s]' % (
+        self.title = '%s (%s, %s)' % (
                 data['name'],
                 data['kind'][:1].upper() + data['kind'][1:],
                 data['arch'])
