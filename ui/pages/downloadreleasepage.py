@@ -69,20 +69,23 @@ class DownloadReleasePage(Page):
         grid.attach(label, 0, 1, 1, 1)
 
         self.item_progress = Gtk.ProgressBar()
-        self.item_progress.set_show_text(True)
         self.item_progress.set_hexpand(True)
         self.item_progress.show()
-        grid.attach(self.item_progress, 1, 1, 1, 1)
+        grid.attach(self.item_progress, 0, 2, 1, 1)
 
         label = Gtk.Label('Total:')
         label.set_halign(Gtk.Align.START)
         label.show()
-        grid.attach(label, 0, 2, 1, 1)
+        grid.attach(label, 0, 3, 1, 1)
 
         self.total_progress = Gtk.ProgressBar()
-        self.total_progress.set_show_text(True)
         self.total_progress.show()
-        grid.attach(self.total_progress, 1, 2, 1, 1)
+        grid.attach(self.total_progress, 0, 4, 1, 1)
+
+        self.numbers_label = Gtk.Label()
+        self.numbers_label.set_halign(Gtk.Align.START)
+        self.numbers_label.show()
+        grid.attach(self.numbers_label, 0, 5, 1, 1)
 
         self.downloader = FileDownload()
         self.downloader.connect('download-error', self.download_error)
@@ -96,11 +99,10 @@ class DownloadReleasePage(Page):
         print 'Downloading %s failed' % handle
 
     def download_progress(self, downloader, handle):
-        self.total_bytes = downloader.total_bytes
-        self.total_bytes_read = downloader.total_bytes_read
         self.item_bytes = handle.info.size
         self.item_bytes_read = handle.bytes_read
-        self.item_name = handle.item.name
+        self.total_bytes = downloader.total_bytes
+        self.total_bytes_read = downloader.total_bytes_read
 
     def download_finished(self, downloader):
         self.download_completed = True
@@ -111,20 +113,14 @@ class DownloadReleasePage(Page):
             return False
         
         if self.item_bytes == 0:
-            self.item_progress.set_text(self.item_name)
+            self.item_progress.set_fraction(0.0)
         else:
             fraction = self.item_bytes_read / float(self.item_bytes)
             self.item_progress.set_fraction(fraction)
 
-            text = '%.1f of %.1f MB' % (
-                self.item_bytes_read / 1000 / 1000.0,
-                self.item_bytes / 1000 / 1000.0
-            )
-            self.item_progress.set_text(text)
-
         if self.total_bytes == 0:
             self.total_progress.set_fraction(0.0)
-            self.total_progress.set_text('Connecting...')
+            self.numbers_label.set_text('Connecting...')
         else:
             fraction = self.total_bytes_read / float(self.total_bytes)
             self.total_progress.set_fraction(fraction)
@@ -133,7 +129,7 @@ class DownloadReleasePage(Page):
                 self.total_bytes_read / 1000 / 1000.0,
                 self.total_bytes / 1000 / 1000.0
             )
-            self.total_progress.set_text(text)
+            self.numbers_label.set_text(text)
 
         return True
 
@@ -156,10 +152,6 @@ class DownloadReleasePage(Page):
     def prepare(self, results):
         self.cancel()
 
-        release = results['select-release']
-        self.title.set_markup('<span size="large">Downloading %s</span>' %
-                              release.title)
-
         configdir = GLib.get_user_config_dir()
         self.dirname = os.path.join(
                 configdir, 'baserock-installer', 'files',
@@ -168,11 +160,12 @@ class DownloadReleasePage(Page):
         if not os.path.isdir(self.dirname):
             os.makedirs(self.dirname)
 
-        self.download_items = set()
+        release = results['select-release']
+        self.download_items = []
         for url in release.files():
             basename = os.path.basename(url)
             destination = os.path.join(self.dirname, basename)
-            self.download_items.add(DownloadItem(basename, url, destination))
+            self.download_items.append(DownloadItem(basename, url, destination))
 
         self.worker = self.downloader.download(self.download_items)
 
