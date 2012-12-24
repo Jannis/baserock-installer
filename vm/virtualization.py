@@ -16,10 +16,28 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+import subprocess
+
+
 class Virtualization(object):
 
     def __init__(self):
         pass
 
     def name(self):
+        return NotImplemented
+
+    def create(self, vm):
+        return NotImplemented
+
+    def setup_port_forwarding(self, vm, host_port, client_port):
+        return NotImplemented
+
+    def prepare_disk(self, vm, image):
+        return NotImplemented
+
+    def attach_disk(self, vm, index, disk):
+        return NotImplemented
+
+    def start(self, vm):
         return NotImplemented
