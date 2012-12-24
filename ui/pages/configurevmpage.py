@@ -45,7 +45,6 @@ class ConfigureVMPage(Page):
         grid.attach(label, 0, 1, 1, 1)
 
         self.model = Gtk.ListStore(str, object)
-
         self.combo = Gtk.ComboBox(model=self.model)
         self.combo.connect('changed', self.virtualization_changed)
         renderer = Gtk.CellRendererText()
@@ -54,9 +53,33 @@ class ConfigureVMPage(Page):
         self.combo.show()
         grid.attach(self.combo, 1, 1, 1, 1)
 
+        label = Gtk.Label('VM Name:')
+        label.set_halign(Gtk.Align.START)
+        label.show()
+        grid.attach(label, 0, 2, 1, 1)
+
+        self.vm_name = Gtk.Entry()
+        self.vm_name.set_halign(Gtk.Align.FILL)
+        self.vm_name.set_hexpand(True)
+        self.vm_name.show()
+        grid.attach(self.vm_name, 1, 2, 4, 1)
+
+        label = Gtk.Label('SSH Forward Port:')
+        label.set_halign(Gtk.Align.START)
+        label.show()
+        grid.attach(label, 0, 3, 1, 1)
+
+        self.ssh_port = Gtk.SpinButton()
+        self.ssh_port.set_range(1, 9999)
+        self.ssh_port.set_value(2222)
+        self.ssh_port.show()
+        grid.attach(self.ssh_port, 1, 3, 1, 1)
+
     def prepare(self, results):
         self.release = results['select-release']
         self.downloads = results['download-release']
+
+        self.vm_name.set_text(self.release.title)
 
         self.model.clear()
 
@@ -74,4 +97,13 @@ class ConfigureVMPage(Page):
         self.notify_complete()
 
     def is_complete(self):
-        return True
+        return self.vm_name.get_text() and self.ssh_port.get_value()
+
+    def result(self):
+        model_iter = self.combo.get_active_iter()
+        name, virtualization = self.model.get(model_iter, 0, 1)
+        return {
+            'virtualization': virtualization,
+            'vm-name': self.vm_name.get_text(),
+            'ssh-port': self.ssh_port.get_value()
+        }
