@@ -18,10 +18,9 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+import gtk
 import pkgutil
 import os
-
-from gi.repository import Gtk
 
 from ui.pages.page import Page
 
@@ -33,47 +32,45 @@ class ConfigureVMPage(Page):
 
         title, box = self.start_section('Configure Virtual Machine')
 
-        grid = Gtk.Grid()
-        grid.set_column_spacing(12)
-        grid.set_row_spacing(6)
-        grid.show()
-        box.pack_start(grid, False, False, 0)
+        table = gtk.Table()
+        table.set_col_spacings(12)
+        table.set_row_spacings(6)
+        table.show()
+        box.pack_start(table, False, False, 0)
 
-        label = Gtk.Label('Virtualization:')
-        label.set_halign(Gtk.Align.START)
+        label = gtk.Label('Virtualization:')
+        label.set_alignment(0.0, 0.5)
         label.show()
-        grid.attach(label, 0, 1, 1, 1)
+        table.attach(label, 0, 1, 0, 1)
 
-        self.model = Gtk.ListStore(str, object)
-        self.combo = Gtk.ComboBox(model=self.model)
+        self.model = gtk.ListStore(str, object)
+        self.combo = gtk.ComboBox(model=self.model)
         self.combo.connect('changed', self.virtualization_changed)
-        renderer = Gtk.CellRendererText()
+        renderer = gtk.CellRendererText()
         self.combo.pack_start(renderer, True)
         self.combo.add_attribute(renderer, 'text', 0)
         self.combo.show()
-        grid.attach(self.combo, 1, 1, 1, 1)
+        table.attach(self.combo, 1, 2, 0, 1)
 
-        label = Gtk.Label('VM Name:')
-        label.set_halign(Gtk.Align.START)
+        label = gtk.Label('VM Name:')
+        label.set_alignment(0.0, 0.5)
         label.show()
-        grid.attach(label, 0, 2, 1, 1)
+        table.attach(label, 0, 1, 1, 2)
 
-        self.vm_name = Gtk.Entry()
-        self.vm_name.set_halign(Gtk.Align.FILL)
-        self.vm_name.set_hexpand(True)
+        self.vm_name = gtk.Entry()
         self.vm_name.show()
-        grid.attach(self.vm_name, 1, 2, 4, 1)
+        table.attach(self.vm_name, 1, 2, 1, 2)
 
-        label = Gtk.Label('SSH Forward Port:')
-        label.set_halign(Gtk.Align.START)
+        label = gtk.Label('SSH Forward Port:')
+        label.set_alignment(0.0, 0.5)
         label.show()
-        grid.attach(label, 0, 3, 1, 1)
+        table.attach(label, 0, 1, 2, 3)
 
-        self.ssh_port = Gtk.SpinButton()
+        self.ssh_port = gtk.SpinButton()
         self.ssh_port.set_range(1, 9999)
         self.ssh_port.set_value(2222)
         self.ssh_port.show()
-        grid.attach(self.ssh_port, 1, 3, 1, 1)
+        table.attach(self.ssh_port, 1, 2, 2, 3)
 
     def prepare(self, results):
         self.release = results['select-release']
@@ -94,7 +91,7 @@ class ConfigureVMPage(Page):
         self.combo.set_active(0)
 
     def virtualization_changed(self, combo):
-        self.notify_complete()
+        self.emit('complete')
 
     def is_complete(self):
         return self.vm_name.get_text() and self.ssh_port.get_value()

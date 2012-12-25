@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -
 # vi:set sw=4 sts=4 ts=4 et nocindent:
 #
 # Copyright (C) 2012 Jannis Pohlmann <jannis.pohlmann@codethink.co.uk>
@@ -18,11 +16,10 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+import gtk
 import os
 import subprocess
 import threading
-
-from gi.repository import Gdk, GLib, Gtk
 
 import utils.urls
 
@@ -40,17 +37,17 @@ class SelectReleasePage(Page):
                 'environment, please select one of the releases below.')
         box.pack_start(text, False, False, 0)
 
-        self.model = Gtk.ListStore(str, object)
-        self.combo = Gtk.ComboBox.new_with_model(self.model)
+        self.model = gtk.ListStore(str, object)
+        self.combo = gtk.ComboBox(self.model)
         self.combo.connect('changed', self.selection_changed)
-        renderer = Gtk.CellRendererText()
+        renderer = gtk.CellRendererText()
         self.combo.pack_start(renderer, True)
         self.combo.add_attribute(renderer, 'text', 0)
         self.combo.show()
         box.pack_start(self.combo, False, False, 0)
 
     def selection_changed(self, combo):
-        self.notify_complete()
+        self.emit('complete')
 
     def prepare(self, results):
         self.model.clear()

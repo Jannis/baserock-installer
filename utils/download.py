@@ -16,17 +16,16 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-from gi.repository import GObject
-
-
+import gobject
+import httplib
 import os
 import socket
-import httplib
+import tempfile
+import time
 import urllib
 import urlparse
-import tempfile
 import shutil
-import time
+
 from threading import Thread
 
 
@@ -48,19 +47,19 @@ class URLInfo(object):
         self.size = int(handle_info['Content-Length'])
 
 
-class DownloadHandle(GObject.GObject):
+class DownloadHandle(gobject.GObject):
 
     ''' Handle object for file downloads. '''
 
     def __init__(self, item, handle):
-        GObject.GObject.__init__(self)
+        gobject.GObject.__init__(self)
         self.item = item
         self.handle = handle
         self.info = URLInfo(handle.info())
         self.bytes_read = 0
 
 
-class FileDownload(GObject.GObject):
+class FileDownload(gobject.GObject):
 
     ''' Download manager with cancellation and download queue capabilities. '''
 
@@ -68,34 +67,34 @@ class FileDownload(GObject.GObject):
 
     __gsignals__ = {
         'download-item-started': (
-            GObject.SIGNAL_RUN_LAST,
-            GObject.TYPE_BOOLEAN,
+            gobject.SIGNAL_RUN_LAST,
+            gobject.TYPE_BOOLEAN,
             (DownloadHandle, )
         ),
         'download-item-finished': (
-            GObject.SIGNAL_RUN_LAST,
-            GObject.TYPE_BOOLEAN,
+            gobject.SIGNAL_RUN_LAST,
+            gobject.TYPE_BOOLEAN,
             (DownloadHandle, )
         ),
         'download-error': (
-            GObject.SIGNAL_RUN_LAST,
-            GObject.TYPE_BOOLEAN,
+            gobject.SIGNAL_RUN_LAST,
+            gobject.TYPE_BOOLEAN,
             (DownloadHandle, )
         ),
         'download-progress': (
-            GObject.SIGNAL_RUN_LAST,
-            GObject.TYPE_BOOLEAN,
+            gobject.SIGNAL_RUN_LAST,
+            gobject.TYPE_BOOLEAN,
             (DownloadHandle, )
         ),
         'download-finished': (
-            GObject.SIGNAL_RUN_LAST,
-            GObject.TYPE_BOOLEAN,
+            gobject.SIGNAL_RUN_LAST,
+            gobject.TYPE_BOOLEAN,
             ()
         ),
     }
 
     def __init__(self):
-        GObject.GObject.__init__(self)
+        gobject.GObject.__init__(self)
         self.excluded_mime_types = set()
         self._reset()
     

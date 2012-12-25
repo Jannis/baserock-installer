@@ -18,18 +18,17 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+import glib
 import glob
+import gtk
 import os
 import subprocess
 import threading
 import yaml
 
-from gi.repository import Gdk, GLib, Gtk
-
 import utils.urls
 
 from ui.pages.page import Page
-from utils import gdk
 from utils.release import Release
 
 
@@ -38,7 +37,7 @@ class DownloadReleasesPage(Page):
     def __init__(self, assistant):
         Page.__init__(self, assistant)
 
-        configdir = GLib.get_user_config_dir()
+        configdir = glib.get_user_config_dir()
         self.repositories = os.path.join(
                 configdir, 'baserock-installer', 'repos')
 
@@ -47,7 +46,7 @@ class DownloadReleasesPage(Page):
         self.download_text = self.create_text('')
         box.pack_start(self.download_text, False, False, 0)
 
-        self.progress = Gtk.ProgressBar()
+        self.progress = gtk.ProgressBar()
         self.progress.set_show_text(True)
         self.progress.show()
         box.pack_start(self.progress, False, False, 0)
@@ -89,35 +88,35 @@ class DownloadReleasesPage(Page):
     def clone_repository(self):
         try:
             if os.path.isdir(self.repodir):
-                with gdk.lock:
+                with gtk.gdk.lock:
                     self.progress.set_text('Pulling %s...' %
                                            os.path.basename(self.repository))
                 subprocess.check_output(['git', 'remote', 'set-url', 'origin',
                                          self.repository], cwd=self.repodir,
                                         stderr=subprocess.STDOUT)
-                with gdk.lock:
+                with gtk.gdk.lock:
                     self.progress.set_fraction(1/3.0)
                 subprocess.check_output(['git', 'pull', '--rebase', 'origin'],
                                         cwd=self.repodir,
                                         stderr=subprocess.STDOUT)
-                with gdk.lock:
+                with gtk.gdk.lock:
                     self.progress.set_fraction(2/3.0)
             else:
-                with gdk.lock:
+                with gtk.gdk.lock:
                     self.progress.set_text('Cloning %s...' %
                                            os.path.basename(self.repository))
                 subprocess.check_output(['git', 'clone', self.repository,
                                         self.repodir],
                                         stderr=subprocess.STDOUT)
-                with gdk.lock:
+                with gtk.gdk.lock:
                     self.progress.set_fraction(2/3.0)
             self.download_succeeded = True
         except subprocess.CalledProcessError, err:
-            with gdk.lock:
+            with gtk.gdk.lock:
                 self.set_error(err.output)
             return
 
-        with gdk.lock:
+        with gtk.gdk.lock:
             self.progress.set_text('Loading releases...')
 
         try:
@@ -132,15 +131,15 @@ class DownloadReleasesPage(Page):
                         release = Release(filename, data)
                         self.releases.append(release)
         except Exception, err:
-            with gdk.lock:
+            with gtk.gdk.lock:
                 self.set_error('%s' % err)
                 self.progress.set_fraction(0.0)
                 return
 
-        with gdk.lock:
+        with gtk.gdk.lock:
             self.progress.set_text('Finished')
             self.progress.set_fraction(1.0)
-            self.notify_complete()
+            self.emit('complete')
 
     def is_complete(self):
         return self.download_succeeded and self.releases

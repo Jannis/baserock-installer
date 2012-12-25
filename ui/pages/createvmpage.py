@@ -18,13 +18,12 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+import glib
+import gtk
 import os
 import threading
 
-from gi.repository import GLib, GObject, Gtk
-
 from ui.pages.page import Page
-from utils import gdk
 from utils.task import Task
 
 
@@ -91,11 +90,11 @@ class CreateVMPage(Page):
                 'other downloaded files into it.')
         box.pack_start(text, False, False, 0)
 
-        self.progress_bar = Gtk.ProgressBar()
+        self.progress_bar = gtk.ProgressBar()
         self.progress_bar.show()
         box.pack_start(self.progress_bar, False, False, 0)
 
-        self.status_label = Gtk.Label('Initialising...')
+        self.status_label = gtk.Label('Initialising...')
         self.status_label.set_line_wrap(True)
         self.status_label.set_alignment(0.0, 0.0)
         self.status_label.show()
@@ -116,21 +115,21 @@ class CreateVMPage(Page):
         self.percent = 0.0
         self.status_label_text = ''
 
-        GLib.idle_add(self.update_progress_bar)
+        glib.idle_add(self.update_progress_bar)
 
     def progress(self, worker, percent, text):
         self.percent = percent
         self.status_label_text = text
-        GLib.idle_add(self.update_progress_bar)
+        glib.idle_add(self.update_progress_bar)
 
     def error(self, worker, error):
         self.status_label_text = '<b>Error: %s</b>' % error
-        GLib.idle_add(self.update_progress_bar)
+        glib.idle_add(self.update_progress_bar)
 
     def finished(self, worker):
-        GLib.idle_add(self.update_progress_bar)
+        glib.idle_add(self.update_progress_bar)
         self.setup_completed = True
-        self.notify_complete()
+        self.emit('complete')
 
     def update_progress_bar(self):
         self.progress_bar.set_fraction(self.percent)

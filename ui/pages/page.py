@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -
 # vi:set sw=4 sts=4 ts=4 et nocindent:
 #
 # Copyright (C) 2012 Jannis Pohlmann <jannis.pohlmann@codethink.co.uk>
@@ -18,77 +16,86 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-from gi.repository import Gdk, Gtk
+import gobject
+import gtk
 
 from utils.lookup import Lookup
 
 
-class Header(Gtk.Frame):
+class Header(gtk.Frame):
 
     def __init__(self):
-        Gtk.Frame.__init__(self)
+        gtk.Frame.__init__(self)
 
-        self.set_shadow_type(Gtk.ShadowType.NONE)
+        self.set_shadow_type(gtk.SHADOW_NONE)
 
-        box = Gtk.EventBox()
-        box.modify_bg(Gtk.StateType.NORMAL, Gdk.color_parse('#333'))
+        box = gtk.EventBox()
+        box.modify_bg(gtk.STATE_NORMAL, gtk.gdk.color_parse('#333'))
         box.show()
         self.add(box)
 
-        alignment = Gtk.Alignment()
+        alignment = gtk.Alignment(0.5, 0.5)
         alignment.set_padding(20, 20, 20, 20)
         alignment.show()
         box.add(alignment)
 
-        image = Gtk.Image.new_from_file(Lookup().icon('baserock-logo.png'))
+        image = gtk.image_new_from_file(Lookup().icon('baserock-logo.png'))
         image.show()
         alignment.add(image)
 
 
-class Page(Gtk.VBox):
+class Page(gtk.VBox):
+
+    __gsignals__ = {
+        'complete': (
+            gobject.SIGNAL_RUN_LAST,
+            gobject.TYPE_NONE,
+            ()
+        )
+    }
 
     def __init__(self, assistant):
-        Gtk.VBox.__init__(self)
+        gtk.VBox.__init__(self, False, 6)
 
         self.assistant = assistant
         
         header = Header()
         header.show()
-        self.pack_start(header, False, False, 0)
+        self.pack_start(header, False, True, 0)
 
-        alignment = Gtk.Alignment()
-        alignment.set_padding(10, 0, 0, 0)
+        alignment = gtk.Alignment()
+        alignment.set_padding(5, 0, 0, 0)
         alignment.show()
-        self.pack_start(alignment, False, False, 0)
+        self.pack_start(alignment, False, True, 0)
 
-        self.vbox = Gtk.VBox(False, 12)
+        self.vbox = gtk.VBox(False, 12)
         self.vbox.show()
         alignment.add(self.vbox)
 
     def start_section(self, title):
-        alignment = Gtk.Alignment()
+        alignment = gtk.Alignment()
         alignment.set_padding(20, 0, 0, 0)
         alignment.show()
-        self.vbox.pack_start(alignment, False, False, 0)
+        self.vbox.pack_start(alignment, False, True, 0)
 
-        vbox = Gtk.VBox(False, 12)
+        vbox = gtk.VBox(False, 12)
         vbox.show()
         alignment.add(vbox)
 
-        label = Gtk.Label()
+        label = gtk.Label()
         label.set_alignment(0.0, 0.0)
         label.set_markup('<span size="large">%s</span>' % title)
         label.show()
-        vbox.pack_start(label, False, False, 0)
+        vbox.pack_start(label, False, True, 0)
 
-        box = Gtk.VBox(False, 12)
+        box = gtk.VBox(False, 12)
         box.show()
-        vbox.pack_start(box, False, False, 0)
+        vbox.pack_start(box, False, True, 0)
 
         return label, box
 
     def create_text(self, text):
-        label = Gtk.Label()
+        label = gtk.Label()
         label.set_alignment(0.0, 0.0)
         label.set_line_wrap(True)
         label.set_markup(text)
@@ -103,9 +110,6 @@ class Page(Gtk.VBox):
 
     def prepare(self, results):
         pass
-
-    def notify_complete(self):
-        self.assistant.child_notify(self, 'complete')
 
     def cancel(self):
         pass

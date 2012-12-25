@@ -18,18 +18,17 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+import glib
 import glob
+import gtk
 import os
 import subprocess
 import threading
 import yaml
 
-from gi.repository import Gdk, GLib, Gtk
-
 import utils.urls
 
 from ui.pages.page import Page
-from utils import gdk
 from utils.release import Release
 from utils.download import DownloadItem, FileDownload
 
@@ -39,7 +38,7 @@ class DownloadReleasePage(Page):
     def __init__(self, assistant):
         Page.__init__(self, assistant)
 
-        config_dir = GLib.get_user_config_dir()
+        config_dir = glib.get_user_config_dir()
         self.repositories = os.path.join(
                 config_dir, 'baserock-installer', 'repos')
 
@@ -57,35 +56,32 @@ class DownloadReleasePage(Page):
                 'it is clear how exactly the system is configured.')
         box.pack_start(text, False, False, 0)
 
-        grid = Gtk.Grid()
-        grid.set_column_spacing(12)
-        grid.set_row_spacing(6)
-        grid.show()
-        box.pack_start(grid, False, True, 0)
+        progress_box = gtk.VBox(False, 6)
+        progress_box.show()
+        box.pack_start(progress_box, False, True, 0)
 
-        label = Gtk.Label('Current File:')
-        label.set_halign(Gtk.Align.START)
+        label = gtk.Label('Current File:')
+        label.set_alignment(0.0, 0.5)
         label.show()
-        grid.attach(label, 0, 1, 1, 1)
+        progress_box.pack_start(label, False, False, 0)
 
-        self.item_progress = Gtk.ProgressBar()
-        self.item_progress.set_hexpand(True)
+        self.item_progress = gtk.ProgressBar()
         self.item_progress.show()
-        grid.attach(self.item_progress, 0, 2, 1, 1)
+        progress_box.pack_start(self.item_progress, False, False, 0)
 
-        label = Gtk.Label('Total:')
-        label.set_halign(Gtk.Align.START)
+        label = gtk.Label('Total:')
+        label.set_alignment(0.0, 0.5)
         label.show()
-        grid.attach(label, 0, 3, 1, 1)
+        progress_box.pack_start(label, False, False, 0)
 
-        self.total_progress = Gtk.ProgressBar()
+        self.total_progress = gtk.ProgressBar()
         self.total_progress.show()
-        grid.attach(self.total_progress, 0, 4, 1, 1)
+        progress_box.pack_start(self.total_progress, False, False, 0)
 
-        self.numbers_label = Gtk.Label()
-        self.numbers_label.set_halign(Gtk.Align.START)
+        self.numbers_label = gtk.Label()
+        self.numbers_label.set_alignment(0.0, 0.5)
         self.numbers_label.show()
-        grid.attach(self.numbers_label, 0, 5, 1, 1)
+        progress_box.pack_start(self.numbers_label, False, False, 0)
 
         self.downloader = FileDownload()
         self.downloader.connect('download-error', self.download_error)
@@ -106,7 +102,7 @@ class DownloadReleasePage(Page):
 
     def download_finished(self, downloader):
         self.download_completed = True
-        self.notify_complete()
+        self.emit('complete')
 
     def update_progress_bars(self):
         if self.downloader.is_terminated() or self.download_completed:
@@ -135,8 +131,8 @@ class DownloadReleasePage(Page):
 
     def reset(self):
         if self.idle_id != 0:
-            GLib.source_remove(self.idle_id)
-        self.idle_id = GLib.idle_add(self.update_progress_bars)
+            glib.source_remove(self.idle_id)
+        self.idle_id = glib.idle_add(self.update_progress_bars)
 
         self.download_completed = False
 
@@ -152,7 +148,7 @@ class DownloadReleasePage(Page):
     def prepare(self, results):
         self.cancel()
 
-        configdir = GLib.get_user_config_dir()
+        configdir = glib.get_user_config_dir()
         self.dirname = os.path.join(
                 configdir, 'baserock-installer', 'files',
                 os.path.basename(results['download-releases']['repodir']))
@@ -165,7 +161,8 @@ class DownloadReleasePage(Page):
         for url in release.files():
             basename = os.path.basename(url)
             destination = os.path.join(self.dirname, basename)
-            self.download_items.append(DownloadItem(basename, url, destination))
+            self.download_items.append(
+                    DownloadItem(basename, url, destination))
 
         self.worker = self.downloader.download(self.download_items)
 

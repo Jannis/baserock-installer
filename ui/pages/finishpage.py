@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -
 # vi:set sw=4 sts=4 ts=4 et nocindent:
 #
 # Copyright (C) 2012 Jannis Pohlmann <jannis.pohlmann@codethink.co.uk>
@@ -18,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-from gi.repository import Gtk
+import gtk
 
 from ui.pages.page import Page
 
@@ -42,9 +40,9 @@ class FinishPage(Page):
                 'button below.')
         box.pack_start(text, False, True, 0)
 
-        self.start_button = Gtk.Button()
-        image = Gtk.Image.new_from_stock(
-                Gtk.STOCK_EXECUTE, Gtk.IconSize.BUTTON)
+        self.start_button = gtk.Button()
+        image = gtk.image_new_from_stock(
+                gtk.STOCK_EXECUTE, gtk.ICON_SIZE_BUTTON)
         self.start_button.set_image(image)
         self.start_button.set_label('Start Baserock')
         self.start_button.show()

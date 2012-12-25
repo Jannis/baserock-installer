@@ -16,39 +16,40 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
+import gio
+import gobject
+import gtk
 import threading
 
-from gi.repository import Gio, GObject
 
-
-class Task(GObject.GObject):
+class Task(gobject.GObject):
 
     __gsignals__ = {
         'started': (
-            GObject.SIGNAL_RUN_LAST,
-            GObject.TYPE_NONE,
+            gobject.SIGNAL_RUN_LAST,
+            gobject.TYPE_NONE,
             ()
         ),
         'finished': (
-            GObject.SIGNAL_RUN_LAST,
-            GObject.TYPE_NONE,
+            gobject.SIGNAL_RUN_LAST,
+            gobject.TYPE_NONE,
             ()
         ),
         'progress': (
-            GObject.SIGNAL_RUN_LAST,
-            GObject.TYPE_NONE,
+            gobject.SIGNAL_RUN_LAST,
+            gobject.TYPE_NONE,
             (float, str),
         ),
         'error': (
-            GObject.SIGNAL_RUN_LAST,
-            GObject.TYPE_NONE,
+            gobject.SIGNAL_RUN_LAST,
+            gobject.TYPE_NONE,
             (str, ),
         ),
     }
 
     def __init__(self):
-        GObject.GObject.__init__(self)
-        self.cancellable = Gio.Cancellable()
+        gobject.GObject.__init__(self)
+        self.cancellable = gio.Cancellable()
         self.thread = threading.Thread(target=self.worker_thread)
 
     def start(self):

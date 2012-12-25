@@ -16,8 +16,11 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-from gi.repository import Gtk
+import pygtk
+pygtk.require('2.0')
+import gtk
 
+from ui.assistant import Assistant
 from ui.pages.configurevmpage import ConfigureVMPage
 from ui.pages.createvmpage import CreateVMPage
 from ui.pages.downloadreleasepage import DownloadReleasePage
@@ -27,13 +30,13 @@ from ui.pages.finishpage import FinishPage
 from ui.pages.welcomepage import WelcomePage
 
 
-class Installer(Gtk.Assistant):
+class Installer(Assistant):
 
     def __init__(self):
-        Gtk.Assistant.__init__(self)
+        Assistant.__init__(self)
 
         self.set_default_size(640, 400)
-        self.set_position(Gtk.WindowPosition.CENTER)
+        self.set_position(gtk.WIN_POS_CENTER)
 
         self.connect('cancel', self.cancel)
         self.connect('delete-event', self.cancel)
@@ -48,40 +51,40 @@ class Installer(Gtk.Assistant):
                 'id': 'welcome',
                 'page': WelcomePage(self),
                 'title': 'Welcome',
-                'type': Gtk.AssistantPageType.INTRO,
+                'type': gtk.ASSISTANT_PAGE_INTRO,
                 'complete': False,
             },
             {
                 'id': 'download-releases',
                 'page': DownloadReleasesPage(self),
                 'title': 'Download Releases',
-                'type': Gtk.AssistantPageType.CONTENT,
+                'type': gtk.ASSISTANT_PAGE_CONTENT,
                 'auto-advance': True,
             },
             {
                 'id': 'select-release',
                 'page': SelectReleasePage(self),
                 'title': 'Select Release',
-                'type': Gtk.AssistantPageType.CONTENT,
+                'type': gtk.ASSISTANT_PAGE_CONTENT,
             },
             {
                 'id': 'download-release',
                 'page': DownloadReleasePage(self),
                 'title': 'Download Release',
-                'type': Gtk.AssistantPageType.CONTENT,
+                'type': gtk.ASSISTANT_PAGE_CONTENT,
                 'auto-advance': True,
             },
             {
                 'id': 'configure-vm',
                 'page': ConfigureVMPage(self),
                 'title': 'Configure Virtual Machine',
-                'type': Gtk.AssistantPageType.CONTENT,
+                'type': gtk.ASSISTANT_PAGE_CONTENT,
             },
             {
                 'id': 'create-vm',
                 'page': CreateVMPage(self),
                 'title': 'Create Virtual Machine',
-                'type': Gtk.AssistantPageType.PROGRESS,
+                'type': gtk.ASSISTANT_PAGE_PROGRESS,
                 'auto-advance': True,
                 'commit': True,
             },
@@ -89,14 +92,14 @@ class Installer(Gtk.Assistant):
                 'id': 'finish',
                 'page': FinishPage(self),
                 'title': 'Summary',
-                'type': Gtk.AssistantPageType.SUMMARY,
+                'type': gtk.ASSISTANT_PAGE_SUMMARY,
                 'complete': True,
             }
         ]
 
         for page in self.pages:
-            page['page'].connect('child-notify::complete', self.page_complete)
             page['page'].show()
+            page['page'].connect('complete', self.page_complete)
             self.append_page(page['page'])
             self.set_page_type(page['page'], page['type'])
             self.set_page_title(
@@ -116,7 +119,8 @@ class Installer(Gtk.Assistant):
             results[info['id']] = info['result'] if 'result' in info else None
         return results
 
-    def page_complete(self, page, pspec):
+    def page_complete(self, page):
+        print 'page complete: %s' % page
         info = self.page_info(page)
         if page.is_complete():
             self.set_page_complete(page, True)
@@ -128,6 +132,7 @@ class Installer(Gtk.Assistant):
             info['result'] = None
 
     def prepare(self, installer, page):
+        print 'prepare page %s' % page
         info = self.page_info(page)
         if 'commit' in info and info['commit']:
             self.commit()
@@ -144,8 +149,8 @@ class Installer(Gtk.Assistant):
         self.quit()
 
     def quit(self):
-        Gtk.main_quit()
+        gtk.main_quit()
 
     def run(self):
         self.show()
-        Gtk.main()
+        gtk.main()

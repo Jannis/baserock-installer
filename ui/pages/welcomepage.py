@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -
 # vi:set sw=4 sts=4 ts=4 et nocindent:
 #
 # Copyright (C) 2012 Jannis Pohlmann <jannis.pohlmann@codethink.co.uk>
@@ -18,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-from gi.repository import Gtk
+import gtk
 
 from ui.pages.page import Page
 
@@ -52,26 +50,26 @@ class WelcomePage(Page):
                 '<tt>git://host:path/to/repo.git</tt>')
         box.pack_start(text, False, True, 0)
 
-        hbox = Gtk.HBox(False, 12)
+        hbox = gtk.HBox(False, 12)
         hbox.show()
         box.pack_start(hbox, False, True, 0)
 
-        label = Gtk.Label('Repository:')
+        label = gtk.Label('Repository:')
         label.show()
         hbox.pack_start(label, False, True, 0)
 
-        entry = Gtk.Entry()
+        entry = gtk.Entry()
         entry.set_activates_default(True)
         entry.connect('changed', self.repository_changed)
         entry.connect('activate', self.repository_changed)
-        entry.set_placeholder_text(
+        entry.set_text(
                 'git://trove.baserock.org/baserock/baserock/releases.git')
         entry.show()
         hbox.add(entry)
 
     def repository_changed(self, entry):
         self.repository = entry.get_text()
-        self.notify_complete()
+        self.emit('complete')
 
     def is_complete(self):
         return self.repository and len(self.repository) > 0

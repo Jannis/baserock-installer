@@ -25,9 +25,11 @@ import sys
 if __name__ == '__main__':
     sys.path += map(lambda x: os.path.join(x, 'baserock-installer'), sys.path)
 
-    from gi.repository import Gdk, GObject
-    GObject.threads_init()
-    Gdk.threads_init()
+    import pygtk
+    pygtk.require('2.0')
+    import glib, gtk
+    glib.threads_init()
+    gtk.gdk.threads_init()
 
     from ui.installer import Installer
     installer = Installer()
