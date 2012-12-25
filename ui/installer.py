@@ -83,6 +83,7 @@ class Installer(Gtk.Assistant):
                 'title': 'Create Virtual Machine',
                 'type': Gtk.AssistantPageType.PROGRESS,
                 'auto-advance': True,
+                'commit': True,
             },
             {
                 'id': 'finish',
@@ -127,6 +128,9 @@ class Installer(Gtk.Assistant):
             info['result'] = None
 
     def prepare(self, installer, page):
+        info = self.page_info(page)
+        if 'commit' in info and info['commit']:
+            self.commit()
         page.prepare(self.results())
     
     def cancel(self, *args):

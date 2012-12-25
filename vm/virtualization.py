@@ -19,6 +19,26 @@
 import subprocess
 
 
+class VMExistsError(RuntimeError):
+
+    def __init__(self, vm):
+        RuntimeError.__init__(self, 'Virtual machine "%s" already exists' % vm)
+
+
+class VMConfigurationError(RuntimeError):
+
+    def __init__(self, vm, msg):
+        RuntimeError.__init__(
+                self, 'Failed to configure virtual machine "%s": %s' (vm, msg))
+
+
+class VMStartError(RuntimeError):
+
+    def __init__(self, vm):
+        RuntimeError.__init__(
+                self, 'Failed to start virtual machine "%s"' % vm)
+
+
 class Virtualization(object):
 
     def __init__(self):
